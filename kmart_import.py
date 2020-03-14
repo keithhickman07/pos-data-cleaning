@@ -3,10 +3,10 @@ import pandas as pd
 import numpy as np
 
 """
-latest_file = (r'P:\BI\POS Data from Paul\customer files 20XX\kmart-01-04-2020.xlsx')
+latest_file = (r'P:\BI\Keith Hickman\POS\Data\current_raw_customer\DJG KMART W-E 01-18-20.xlsx')
 """
 
-def kmart_import(latest_file):
+def kmart_import(latest_file, datapath):
     
     #Read in excel file: use only certain columns. 
     #Check dtype of Item ID and Model number. 
@@ -42,7 +42,7 @@ def kmart_import(latest_file):
     #Fill in account and time dimensions... time dimensions step is done on aggregated dataset
    
     print("Importing KMart Item Master...thank you for your patience")
-    kmart_master = pd.read_excel(r"P:\BI\POS Data from Paul\POS Databasework2020.xlsx",
+    kmart_master = pd.read_excel(datapath+r"\POS Databasework2020.xlsx",
                              sheet_name="Dorel Master", 
                              skiprows=6,
                              converters={'12 Digit UPC':str,
@@ -61,12 +61,12 @@ def kmart_import(latest_file):
     #First iteration of join on "vendor" item...
     kmart_merged = pd.merge(kmart, kmart_master, how="left", on="CustItemNumber")
     
-    kmart_merged = kmart_merged.drop_duplicates(subset=['CustItemNumber',
-                                                        'CustVendStkNo',
-                                                        'ItemNumber',
-                                                        'POSAmount',  
-                                                        'POSQuantity'], 
-                                  keep='first')
+    if kmart_merged['POSAmount'].sum() != kmart['POSAmount'].sum():
+        kmart_merged = kmart_merged.drop_duplicates(subset=['CustItemNumber',
+                                                            'CustVendStkNo',
+                                                            'POSAmount',  
+                                                            'POSQuantity'], 
+                                      keep='first')
     
     
     #Create first iteration of "final" dataset. 
@@ -87,14 +87,14 @@ def kmart_import(latest_file):
     kmart_final['AccountMajor'] = "KMART"
     kmart_final['Account'] = 'KMART'
     kmart_final['BricksClicks'] = "Bricks"
-    kmart_final['runcheck'] = 'kmart'
+    kmart_final['UPC'] = ''
     kmart_final['ItemID'] = ""
     
     premium_list = ['MAXI COSI', 'QUINNY', 'Bebe Confort', 'Baby Art', 'Hoppop', 'TINY LOVE']
     kmart_final['MainlinePremium'] = np.where(kmart_final['Short Brand'].isin(premium_list), 'Premium', 'Mainline')
     
     cols_list = ['AccountMajor', 'Account', 'BricksClicks', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
-           'MainlinePremium','POSAmount','POSQuantity', 'runcheck']
+               'MainlinePremium','POSAmount','POSQuantity', 'UPC']
     
     kmart_final = kmart_final[cols_list]
     

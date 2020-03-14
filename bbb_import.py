@@ -10,13 +10,12 @@ import numpy as np
 
 """
 #Need to read in different sheet for BBB - each workbook has three sheets...read in the first two. 
-
 For testing:
-    
+latest_file = r'\\COL-foxfiles\Data\Departments\Sales\Sales Administration\pos-cleanup-utility\Data\current_raw_customer\BBBMainline TL W-E 02-29-2020.xlsx'
 """
-#latest_file = (r'P:\BI\POS Data from Paul\customer files 20XX\bbb-tiny-01-04-2020.xlsx')
 
-def bbb_import(latest_file, customer):
+
+def bbb_import(latest_file, datapath):
     #this will have to be changed to if: filename like... else error logic
     print("Importing BBB POS data file: {}".format(latest_file))
     bbb = pd.read_excel(latest_file,
@@ -64,10 +63,11 @@ def bbb_import(latest_file, customer):
                'POSAmount', 
                'POSQuantity',
                '12 Digit UPC']]
-        
+    bbb['POSQuantity'] = bbb['POSQuantity'].astype("int")
+    bbb['POSAmount'] = round(bbb['POSAmount'],2)
     
     print("Importing BBB Master Data...this takes a minute")
-    bbb_master = pd.read_excel(r"P:\BI\POS Data from Paul\POS Databasework2020.xlsx",
+    bbb_master = pd.read_excel(datapath+r'\\POS Databasework2020.xlsx',
                              sheet_name="Dorel Master", 
                              skiprows=6,
                              converters={'12 Digit UPC':str,
@@ -96,7 +96,7 @@ def bbb_import(latest_file, customer):
                                            'CustVendStkNo'], keep='first')
     
     
-    merged_cols = ['CustItemNumber','CustItemDesc','ItemNumber','POSAmount','POSQuantity', 'Short Brand']
+    merged_cols = ['CustItemNumber','CustItemDesc','ItemNumber','POSAmount','POSQuantity', 'Short Brand', '12 Digit UPC']
     bbb_merged = bbb_merged[merged_cols]
     
     bbb_final = bbb_merged[pd.notnull(bbb_merged['Short Brand'])]
@@ -108,19 +108,17 @@ def bbb_import(latest_file, customer):
     bbb_final['BricksClicks'] = "Bricks"
     bbb_final['AccountMajor'] = "BUY BUY BABY"
     bbb_final['Account'] = "BUY BUY BABY"
-    bbb_final['ItemID']= ''
+    bbb_final.rename(columns={'12 Digit UPC':'UPC'}, inplace=True)
     bbb_final['CustVendStkNo'] = ''
-#    bbb_final['Store Cnt'] = ""
-#    bbb_final['In Stock%'] = ""
-    bbb_final['runcheck'] = customer
-    
+    bbb_final['ItemID'] = ''
+
     #List comprehension for Premium column:
     premium_list = ['MAXI COSI', 'QUINNY', 'Bebe Confort', 'Baby Art', 'Hoppop', 'TINY LOVE']
     bbb_final['MainlinePremium'] = np.where(bbb_final['Short Brand'].isin(premium_list), 'Premium', 'Mainline')
     
     #bbb_final = bbb_final.rename(columns={"12 Digit UPC_x":"12 Digit UPC"}).drop(columns=['12 Digit UPC_y'])
     cols_list = ['AccountMajor', 'Account', 'BricksClicks', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
-           'MainlinePremium','POSAmount','POSQuantity']
+           'MainlinePremium','POSAmount','POSQuantity', 'UPC']
     
     bbb_final = bbb_final[cols_list]
     
@@ -134,14 +132,3 @@ def bbb_import(latest_file, customer):
                                                   "BricksClicks":"count"}).reset_index()
     return bbb_final, bbb_errors, bbb_validation
 
-
-
-
-
-"""    
-    cols_list = ['Acct','VNDR STK NBR', 'ITEM DESCRIPTION', 'WTD POS DOL', 'WTD POS Units',
-       'ACCT MAJOR', 'Short UPC', '12 Digit UPC', 'Dorel UPC', 'Short Item',
-       'ITEM NBR', 'Brand', 'Category', 'Short Brand', 'Ultra', 'Corp Brand',
-       'Fashion', 'bricks_clicks', 'Store Cnt', 'Avg Retail', 'In Stock%',
-       'On Hand', 'On Order', 'Premium', 'runcheck']
-"""

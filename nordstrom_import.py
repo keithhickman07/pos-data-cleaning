@@ -3,11 +3,9 @@
 import pandas as pd
 import numpy as np
 
-"""
-latest_file = r'P:\BI\POS Data from Paul\customer files 20XX\nordstrom-01-11-2020.xls'
-"""
 
-def nordstrom_import(latest_file):
+
+def nordstrom_import(latest_file, datapath):
 
     print("Importing Nordstrom POS Data file: {}".format(latest_file))
     
@@ -20,7 +18,8 @@ def nordstrom_import(latest_file):
                                 "Sales U":"POSQuantity"})
 
     nordstrom = nordstrom[nordstrom['POSAmount'] != 0]
-
+    nordstrom = nordstrom[nordstrom['Bus Unit'].isin(['FULL LINE', 'N.COM','RACK'])]
+    
     # Lambda function to check if a given vaue is bricks or clicks.
     nordstrom['BricksClicks'] = nordstrom['Bus Unit'].apply(lambda x:"Clicks" if x == "N.COM" else "Bricks")
     nordstrom['CustVendStkNo'] = nordstrom['VPN'].str.split(",").str[0].str.strip()
@@ -28,7 +27,7 @@ def nordstrom_import(latest_file):
     
     
     print("Importing Nordstrom Master Data")
-    nordstrom_master = pd.read_excel(r"P:\BI\POS Data from Paul\POS Databasework2020.xlsx",
+    nordstrom_master = pd.read_excel(datapath+r"\POS Databasework2020.xlsx",
                              sheet_name="Dorel Master", 
                              skiprows=6,
                              converters={'12 Digit UPC':str,
@@ -55,14 +54,14 @@ def nordstrom_import(latest_file):
     nordstrom_final['Account']= "NORDSTROM"
     nordstrom_final['CustItemNumber'] = ""
     nordstrom_final['ItemID'] = ''
-    nordstrom_final['runcheck'] = "nordstrom"
+    nordstrom_final['UPC'] = ""
     
     premium_list = ['MAXI COSI', 'QUINNY', 'Bebe Confort', 'Baby Art', 'Hoppop', 'TINY LOVE']
     nordstrom_final['MainlinePremium'] = np.where(nordstrom_final['Short Brand'].isin(premium_list), 'Premium', 'Mainline')
     
        
     cols_list = ['AccountMajor', 'Account', 'BricksClicks', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
-           'MainlinePremium','POSAmount','POSQuantity', 'runcheck']
+               'MainlinePremium','POSAmount','POSQuantity', 'UPC']
 
     
     nordstrom_final = nordstrom_final[cols_list]

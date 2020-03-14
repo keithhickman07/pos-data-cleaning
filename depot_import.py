@@ -5,12 +5,10 @@ import numpy as np
 
 """
 For testing: 
+latest_file = (r"\\COL-foxfiles\Data\Departments\Sales\Sales Administration\pos-cleanup-utility\Data\current_raw_customer\Home Depot W-E 02-29-2020.xlsx")
 """
 
-#latest_file = (r"P:\BI\POS Data from Paul\customer files 20XX\depot-01-04-2020.xlsx")
-
-
-def depot_import(latest_file):
+def depot_import(latest_file, datapath):
 
     print("Importing Home Depot POS Data file: {}".format(latest_file))
     depot = pd.read_excel(latest_file, 
@@ -32,14 +30,17 @@ def depot_import(latest_file):
     depot = depot[['CustItemNumber', 'POSAmount', 'POSQuantity', 'CustItemDesc']]
 
     depot = depot[depot['POSAmount'] != 0]
+    depot['POSQuantity'] = round(depot['POSQuantity'].astype("int"),0)
+    depot['POSAmount'] = round(depot['POSAmount'],2)
     
     print("Importing Home Depot Master")
-    depot_master = pd.read_excel(r"P:\BI\POS Data from Paul\POS Databasework2020.xlsx",
+    depot_master = pd.read_excel(datapath+r"\POS Databasework2020.xlsx",
                              sheet_name="Dorel Master", 
                              skiprows=6,
                              converters={'12 Digit UPC':str,
                                          'Dorel UPC':str,
-                                         'Short UPC':str}).rename(columns={"ITEM NBR":"ItemNumber"})
+                                         'Short UPC':str,
+                                         'Home Depot':str}).rename(columns={"ITEM NBR":"ItemNumber"})
 
     depot_master['CustItemNumber'] = depot_master['Home Depot']
     depot_master = depot_master.drop(columns=['Unnamed: 0'])
@@ -66,19 +67,14 @@ def depot_import(latest_file):
     depot_final['Account'] = 'HOME DEPOT'
     depot_final['ItemID'] = ''
     depot_final['CustVendStkNo'] = ''
-#    depot_final['Store Cnt'] = ""
-#    depot_final['Avg Retail'] = ""
-#    depot_final['In Stock%'] = ""
-#    depot_final['On Hand'] = ""
-#    depot_final['On Order'] = ""
-    depot_final['runcheck'] = 'depot'
+    depot_final['UPC'] = ''
     
     #List comprehension for Premium column:
     premium_list = ['MAXI COSI', 'QUINNY', 'Bebe Confort', 'Baby Art', 'Hoppop', 'TINY LOVE']
     depot_final['MainlinePremium'] = np.where(depot_final['Short Brand'].isin(premium_list), 'Premium', 'Mainline')
     
-    cols_list = ['AccountMajor', 'BricksClicks','Account', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
-           'MainlinePremium','POSAmount','POSQuantity', 'runcheck']
+    cols_list = ['AccountMajor', 'Account', 'BricksClicks', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
+               'MainlinePremium','POSAmount','POSQuantity', 'UPC']
     
     
     depot_final = depot_final[cols_list]

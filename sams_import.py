@@ -8,7 +8,7 @@ latest_file = (r'P:\BI\POS Data from Paul\customer files 20XX\sams-01-11-2020.xl
 import pandas as pd
 import numpy as np
 
-def sams_import(latest_file):
+def sams_import(latest_file, datapath):
 
     print("Importing Sams POS Datafile: {}".format(latest_file))
     
@@ -29,7 +29,7 @@ def sams_import(latest_file):
     
     print("Importing Sams Master Data")
     
-    sams_master = pd.read_excel(r"P:\BI\POS Data from Paul\POS Databasework2020.xlsx",
+    sams_master = pd.read_excel(datapath+r"\POS Databasework2020.xlsx",
                              sheet_name="Dorel Master", 
                              skiprows=6,
                              converters={'12 Digit UPC':str,
@@ -51,14 +51,14 @@ def sams_import(latest_file):
     sams_final['BricksClicks'] = "Bricks"
     sams_final['AccountMajor'] = "SAMS"
     sams_final['Account'] = "SAMS"
-    sams_final['runcheck'] = "sams"
-    sams_final['ItemID'] = ''
+    sams_final['UPC'] = ""
+    sams_final['ItemID'] = ""
 
     premium_list = ['MAXI COSI', 'QUINNY', 'Bebe Confort', 'Baby Art', 'Hoppop', 'TINY LOVE']
     sams_final['MainlinePremium'] = np.where(sams_final['Short Brand'].isin(premium_list), 'Premium', 'Mainline')
     
     cols_list = ['AccountMajor', 'Account', 'BricksClicks', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
-           'MainlinePremium','POSAmount','POSQuantity', 'runcheck']
+               'MainlinePremium','POSAmount','POSQuantity', 'UPC']
 
     
     sams_final = sams_final[cols_list]

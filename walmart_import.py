@@ -9,13 +9,12 @@ import numpy as np
 """
 for testing: 
     
-latest_file = (r'P:\BI\POS Data from Paul\customer files 20XX\walmart-brick-01-04-2020.xlsx')
+latest_file = (r'P:\BI\Keith Hickman\POS\Data\current_raw_customer\Walmart brick W-E 02-01-2020.xlsx')
     
 """
 
-def walmart_import(latest_file):
+def walmart_import(latest_file, datapath):
     print("Importing Walmart Weekly POS Data file: {}".format(latest_file))
-    #walmart = pd.read_excel(r'P:\BI\POS Data From Paul\customer files 20XX\walmart-brick-01-04-2020.xlsx',
     walmart = pd.read_excel(latest_file, 
                     encoding="latin", 
 #                    skiprows=12, 
@@ -38,42 +37,48 @@ def walmart_import(latest_file):
                                         "Prime Item Nbr":"CustItemNumber",
                                         "Item Desc 1":"CustItemDesc"})
     
-    
+    walmart['CustItemNumber'] = walmart['CustItemNumber'].astype("str")
     walmart = walmart[walmart['Dept Category Description'] != "DOTCOM"]
     walmart = walmart[walmart['POSAmount'] != 0]
     
     print("Importing Walmart Master Data")
-    walmart_master = pd.read_excel(r"Y:\Sales Administration\2020 POS\POS Databasework2020.xlsx",
+    walmart_master = pd.read_excel(datapath+r"\POS Databasework2020.xlsx",
                              sheet_name="Dorel Master", 
                              skiprows=6,
                              converters={'12 Digit UPC':str,
                                          'Dorel UPC':str,
-                                         'Short UPC':str}).rename(columns={"ITEM NBR":"ItemNumber"})
+                                         'Short UPC':str, 
+                                         'Walmart':str}).rename(columns={"ITEM NBR":"ItemNumber"})
 
     walmart_master['CustItemNumber'] = walmart_master['Walmart']
     walmart_master['CustVendStkNo'] = walmart_master['ItemNumber']
     
-    walmart_merged = pd.merge(walmart, walmart_master, how="left", on="CustVendStkNo")
+    walmart_merged = pd.merge(walmart, walmart_master, how="left", on="CustItemNumber")
     
     walmart_final = walmart_merged[pd.notnull(walmart_merged['Brand'])]
-    walmart_final = walmart_final.rename(columns={"CustItemNumber_x":"CustItemNumber"}).drop(columns=['CustItemNumber_y'])
+    walmart_final = walmart_final.rename(columns={"CustVendStkNo_x":"CustVendStkNo"}).drop(columns=['CustVendStkNo_y'])
     
     walmart_errors = walmart_merged[walmart_merged['Brand'].isna()]
 
-
+    walmart_final = walmart_final.drop_duplicates(subset=['CustItemDesc',
+                                                          'POSAmount', 
+                                                          'POSQuantity', 
+                                                          'CustItemNumber',
+                                                          'CustVendStkNo'], keep='first')
+    
     pd.options.mode.chained_assignment = None
     
     walmart_final['BricksClicks'] = "Bricks"
     walmart_final['AccountMajor'] = "WALMART"
     walmart_final['Account'] = 'WALMART'
     walmart_final['ItemID'] = ''
-    walmart_final['runcheck'] = "walmart"
+    walmart_final['UPC'] = ''
 
     premium_list = ['MAXI COSI', 'QUINNY', 'Bebe Confort', 'Baby Art', 'Hoppop', 'TINY LOVE']
     walmart_final['MainlinePremium'] = np.where(walmart_final['Short Brand'].isin(premium_list), 'Premium', 'Mainline')
     
     cols_list = ['AccountMajor', 'Account', 'BricksClicks', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
-           'MainlinePremium','POSAmount','POSQuantity', 'runcheck']
+               'MainlinePremium','POSAmount','POSQuantity', 'UPC']
 
     
     walmart_final = walmart_final[cols_list]

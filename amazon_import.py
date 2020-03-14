@@ -6,12 +6,13 @@ import numpy as np
 
 """
 For testing:
-latest_file = (r'P:\BI\POS Data from Paul\customer files 20XX\amazon-01-11-2020.xlsx')
+latest_file = (r'P:\BI\Keith Hickman\POS\Data\current_raw_customer\Amazon W-E 02-01-2020.xlsx')
 
+Function takes in file location for customer file and a datapath 
 """
 
 
-def amazon_import(latest_file):
+def amazon_import(latest_file, datapath):
     
     print("Importing Amazon POS data file: {}".format(latest_file))
     amazon = pd.read_excel(latest_file, skiprows=1).rename(columns=
@@ -26,7 +27,7 @@ def amazon_import(latest_file):
     amazon = amazon[amazon['POSAmount'] != 0]
     
     print("Importing Amazon master...this takes a minute.")
-    amazon_master = pd.read_excel(r"Y:\Sales Administration\2020 POS\POS Databasework2020.xlsx",
+    amazon_master = pd.read_excel(datapath+r"\POS Databasework2020.xlsx",
                              sheet_name="Dorel Master", 
                              skiprows=6,
                              converters={'12 Digit UPC':str,
@@ -71,7 +72,7 @@ def amazon_import(latest_file):
 #    amazon_final['In Stock%'] = ""
 #    amazon_final['On Hand'] = ""
 #    amazon_final['On Order'] = ""
-    amazon_final['runcheck'] = "amazon"
+    amazon_final['UPC'] = ""
 
    
     #List comprehension for Premium column:
@@ -79,8 +80,8 @@ def amazon_import(latest_file):
     amazon_final['MainlinePremium'] = np.where(amazon_final['Short Brand'].isin(premium_list), 'Premium', 'Mainline')
     
    
-    cols_list = ['AccountMajor', 'BricksClicks','Account', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
-           'MainlinePremium','POSAmount','POSQuantity', 'runcheck']
+    cols_list = ['AccountMajor', 'Account', 'BricksClicks', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
+               'MainlinePremium','POSAmount','POSQuantity', 'UPC']
     
     amazon_final = amazon_final[cols_list]    
     if len(amazon_exceptions) > 0:

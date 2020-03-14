@@ -10,7 +10,7 @@ For testing:
 """
 #latest_file = (r'P:\BI\POS Data from Paul\customer files 20XX\marketplace-01-04-2020.xlsx')
 
-def market_import(latest_file):
+def market_import(latest_file, datapath):
     print("Importing Marketplace POS Data file: {}".format(latest_file))
     market = pd.read_excel(latest_file, 
                         encoding="latin", 
@@ -35,7 +35,7 @@ def market_import(latest_file):
     
     print("Importing Marketplace Master Data")
     
-    marketplace_master = pd.read_excel(r"P:\BI\POS Data from Paul\POS Databasework2020.xlsx",
+    marketplace_master = pd.read_excel(datapath+r"\POS Databasework2020.xlsx",
                              sheet_name="Dorel Master", 
                              skiprows=6,
                              converters={'12 Digit UPC':str,
@@ -65,15 +65,15 @@ def market_import(latest_file):
         print(len(market_errors),"join errors")
         
     market_final['BricksClicks'] = "Clicks"
-    market_final['AccountMajor'] = "marketplace"
+    market_final['AccountMajor'] = "MARKETPLACE"
     market_final['ItemID'] = ""
-    market_final['runcheck'] = 'marketplace'
+    market_final['UPC'] = 'marketplace'
 
     premium_list = ['MAXI COSI', 'QUINNY', 'Bebe Confort', 'Baby Art', 'Hoppop', 'TINY LOVE']
     market_final['MainlinePremium'] = np.where(market_final['Short Brand'].isin(premium_list), 'Premium', 'Mainline')
     
-    cols_list = ['AccountMajor', 'BricksClicks','Account', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
-           'MainlinePremium','POSAmount','POSQuantity', 'runcheck']
+    cols_list = ['AccountMajor', 'Account', 'BricksClicks', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
+               'MainlinePremium','POSAmount','POSQuantity', 'UPC']
     
  
     

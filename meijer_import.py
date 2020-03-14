@@ -5,17 +5,27 @@ import pandas as pd
 import numpy as np
 
 """
-Comment out for testing:
-latest_file = r'P:\BI\POS Data from Paul\customer files 20XX\meijer-01-04-2020.xlsx'
+latest_file = r'\\COL-foxfiles\Data\Departments\Sales\Sales Administration\pos-cleanup-utility\Data\current_raw_customer\MEIJER DJG 02-29-20.xlsx'
 """
-def meijer_import(latest_file):
-    print("Importing Meijer POS Data file: {}".format(latest_file))
+
+def meijer_import(latest_file, datapath):
     
+    """
+    sheets = pd.ExcelFile(latest_file).sheet_names
+    meijer_sheet = []
+    for x in sheets:
+        if x.startswith("YTD") or x == "SUMMARY":
+            pass
+        else:
+            meijer_sheet.append(x)
+    """
+    
+    print("Importing Meijer POS Data file: {}".format(latest_file))
     meijer = pd.read_excel(latest_file, 
                        #encoding="utf-8",
                        error_bad_lines=False,
                        skiprows=4, 
-                       sheet_name = "LAST WEEK SALES", 
+                       sheet_name = 1, 
                        dtype={"Product ID":"str", 
                               "UPC":"str"}).rename(columns={"Unnamed: 3":"CustItemDesc",
                                              "Product ID":"CustItemNumber", 
@@ -23,10 +33,12 @@ def meijer_import(latest_file):
                                              "Sales: $":"POSAmount", 
                                              "Sales: Qty":"POSQuantity"})
     
-    meijer = meijer[(meijer['UPC'].notna()) & (meijer['POSAmount'] != 0)]
-    
+    meijer = meijer[(meijer['UPC'].notna()) & (meijer['POSAmount'] != 0) & meijer['POSAmount'].notna()]
+    meijer['POSQuantity'] = round(meijer['POSQuantity'].astype("int"),0)
+    meijer['POSAmount'] = round(meijer['POSAmount'],2)
+        
     print("Importing Meijer Item Master")
-    meijer_master = pd.read_excel(r"P:\BI\POS Data from Paul\POS Databasework2020.xlsx",
+    meijer_master = pd.read_excel(datapath+r"\POS Databasework2020.xlsx",
                              sheet_name="Dorel Master", 
                              skiprows=6,
                              converters={'12 Digit UPC':str,
@@ -36,7 +48,7 @@ def meijer_import(latest_file):
     meijer_master['CustItemNumber'] = meijer_master['Meijer']
     meijer_master = meijer_master.drop(columns=['Unnamed: 0'])
     
-    meijer = meijer[['CustItemDesc','POSAmount', 'POSQuantity', 'CustItemNumber','CustVendStkNo']]
+    meijer = meijer[['CustItemDesc','POSAmount', 'POSQuantity', 'CustItemNumber','CustVendStkNo', 'UPC']]
     
     meijer_merged = pd.merge(meijer, meijer_master, how="left", on='CustItemNumber',suffixes=('_meijer', '_meijer_master'))
     
@@ -44,7 +56,8 @@ def meijer_import(latest_file):
                                                           'POSAmount', 
                                                           'POSQuantity', 
                                                           'CustItemNumber',
-                                                          'CustVendStkNo'], keep='first')
+                                                          'CustVendStkNo',
+                                                          'UPC'], keep='first')
     
     meijer_final = meijer_merged.loc[pd.notnull(meijer_merged['12 Digit UPC'])]
     
@@ -57,14 +70,14 @@ def meijer_import(latest_file):
     meijer_final['BricksClicks'] = "Bricks"
     meijer_final['AccountMajor'] = "MEIJER"
     meijer_final['Account'] = "MEIJER"
-    meijer_final['runcheck'] = 'meijer'
+    #meijer_final['runcheck'] = 'meijer'
     meijer_final['ItemID'] = ""
    
     premium_list = ['MAXI COSI', 'QUINNY', 'Bebe Confort', 'Baby Art', 'Hoppop', 'TINY LOVE']
     meijer_final['MainlinePremium'] = np.where(meijer_final['Short Brand'].isin(premium_list), 'Premium', 'Mainline')
     
     cols_list = ['AccountMajor', 'Account', 'BricksClicks', 'CustItemNumber','CustItemDesc','CustVendStkNo','ItemID','ItemNumber',
-           'MainlinePremium','POSAmount','POSQuantity', 'runcheck']
+               'MainlinePremium','POSAmount','POSQuantity', 'UPC']
 
     
     meijer_final = meijer_final[cols_list]
